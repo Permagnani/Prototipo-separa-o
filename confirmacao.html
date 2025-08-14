@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Confirmação de Pedido</title>
+    <link rel="stylesheet" href="CSS/style.css">
+</head>
+<body>
+    <h1>Confirmação de Pedido</h1>
+    <div class="resumo">
+        <p><strong>Nome:</strong> <span id="resumoNome"></span></p>
+        <p><strong>Loja:</strong> <span id="resumoLoja"></span></p>
+        <h2>Itens do Pedido</h2>
+        <ul id="listaConfirmacao"></ul>
+    </div>
+    <div class="buttons">
+        <button onclick="enviarWhatsAppConfirmado()">Enviar Lista via WhatsApp</button>
+    </div>
+
+    <script>
+        // Recupera o pedido da URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const pedidoBase64 = urlParams.get('pedido');
+        let pedido = { nome: '', loja: '', categorias: [] };
+        if (pedidoBase64) {
+            try {
+                const pedidoJSON = atob(decodeURIComponent(pedidoBase64));
+                pedido = JSON.parse(pedidoJSON);
+            } catch (e) {
+                alert('Erro ao carregar o pedido. Verifique o link.');
+            }
+        } else {
+            alert('Nenhum pedido encontrado no link.');
+        }
+
+        // Preenche nome e loja
+        document.getElementById('resumoNome').textContent = pedido.nome;
+        document.getElementById('resumoLoja').textContent = pedido.loja;
+
+        // Preenche a lista de itens com opções de edição e confirmação
+        const listaConfirmacao = document.getElementById('listaConfirmacao');
+        pedido.categorias.forEach((categoria, catIndex) => {
+            const liCategoria = document.createElement('li');
+            liCategoria.style.marginTop = '1em';
+            liCategoria.style.fontWeight = 'bold';
+            liCategoria.textContent = categoria.nome;
+
+            const ulItens = document.createElement('ul');
+            categoria.itens.forEach((item, itemIndex) => {
+                const liItem = document.createElement('li');
+                liItem.classList.add('item');
+                liItem.innerHTML = `
+                    ${item.label}: Pedido: ${item.quantidade}
+                    <br>
+                    Separado: <input type="number" min="0" value="${item.quantidade}" id="qtd-${catIndex}-${itemIndex}">
+                    <label><input type="checkbox" id="confirm-${catIndex}-${itemIndex}"> Confirmado?</label>
+                `;
+                ulItens.appendChild(liItem);
+            });
+
+            liCategoria.appendChild(ulItens);
+            listaConfirmacao.appendChild(liCategoria);
+        });
+
+        // Função para enviar a lista via WhatsApp
+        function enviarWhatsAppConfirmado() {
+            let texto = `*Confirmação de Pedido Cana Mania*\n`;
+            texto += `👤 *Nome:* ${pedido.nome}\n🏪 *Loja:* ${pedido.loja}\n📦 *Itens:*\n`;
+
+            pedido.categorias.forEach((categoria, catIndex) => {
+                let temItens = false;
+                let textoCategoria = `\n*${categoria.nome}*\n`;
+                categoria.itens.forEach((item, itemIndex) => {
+                    const qtdSeparada = parseInt(document.getElementById(`qtd-${catIndex}-${itemIndex}`).value);
+                    const confirmado = document.getElementById(`confirm-${catIndex}-${itemIndex}`).checked ? 'Sim' : 'Não';
+                    if (qtdSeparada >= 0) {
+                        textoCategoria += `- ${item.label}: ${qtdSeparada} (Confirmado: ${confirmado})\n`;
+                        temItens = true;
+                    }
+                });
+                if (temItens) {
+                    texto += textoCategoria;
+                }
+            });
+
+            const telefone = "5511937143006";
+            const textoEncoded = encodeURIComponent(texto);
+            const link = `https://wa.me/${telefone}?text=${textoEncoded}`;
+            window.open(link, "_blank");
+        }
+    </script>
+</body>
+</html>
