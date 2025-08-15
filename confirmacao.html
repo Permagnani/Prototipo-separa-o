@@ -2,18 +2,21 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Confirmação de Pedido</title>
     <link rel="stylesheet" href="CSS/style.css">
 </head>
 <body>
     <h1>Confirmação de Pedido</h1>
+
     <div class="resumo">
         <p><strong>Nome:</strong> <span id="resumoNome"></span></p>
         <p><strong>Loja:</strong> <span id="resumoLoja"></span></p>
+
         <h2>Itens do Pedido</h2>
         <ul id="listaConfirmacao"></ul>
     </div>
+
     <div class="buttons">
         <button onclick="enviarWhatsAppConfirmado()">Enviar Lista via WhatsApp</button>
     </div>
@@ -54,7 +57,9 @@
                     ${item.label}: Pedido: ${item.quantidade}
                     <br>
                     Separado: <input type="number" min="0" value="${item.quantidade}" id="qtd-${catIndex}-${itemIndex}">
-                    <label><input type="checkbox" id="confirm-${catIndex}-${itemIndex}"> Confirmado?</label>
+                    <label><input type="radio" name="status-${catIndex}-${itemIndex}" value="C" checked> ✅ Certo</label>
+                    <label><input type="radio" name="status-${catIndex}-${itemIndex}" value="M"> ➕ A mais</label>
+                    <label><input type="radio" name="status-${catIndex}-${itemIndex}" value="L"> ➖ A menos</label>
                 `;
                 ulItens.appendChild(liItem);
             });
@@ -63,7 +68,6 @@
             listaConfirmacao.appendChild(liCategoria);
         });
 
-        // Função para enviar a lista via WhatsApp
         function enviarWhatsAppConfirmado() {
             let texto = `*Confirmação de Pedido Cana Mania*\n`;
             texto += `👤 *Nome:* ${pedido.nome}\n🏪 *Loja:* ${pedido.loja}\n📦 *Itens:*\n`;
@@ -73,18 +77,22 @@
                 let textoCategoria = `\n*${categoria.nome}*\n`;
                 categoria.itens.forEach((item, itemIndex) => {
                     const qtdSeparada = parseInt(document.getElementById(`qtd-${catIndex}-${itemIndex}`).value);
-                    const confirmado = document.getElementById(`confirm-${catIndex}-${itemIndex}`).checked ? 'Sim' : 'Não';
+                    const radios = document.getElementsByName(`status-${catIndex}-${itemIndex}`);
+                    let status = 'Certo';
+                    radios.forEach(r => { if(r.checked) status = r.value === 'C' ? 'Certo' : r.value === 'M' ? 'A mais' : 'A menos'; });
                     if (qtdSeparada >= 0) {
-                        textoCategoria += `- ${item.label}: ${qtdSeparada} (Confirmado: ${confirmado})\n`;
+                        textoCategoria += `- ${item.label}: ${qtdSeparada} (${status})\n`;
                         temItens = true;
                     }
                 });
-                if (temItens) {
-                    texto += textoCategoria;
-                }
+                if (temItens) texto += textoCategoria;
             });
 
-            const telefone = "5511937143006";
+            // Inclui link do pedido original no final
+            const linkOriginal = `${window.location.origin}/pedido.html`;
+            texto += `\n🔗 Link do pedido original: ${linkOriginal}`;
+
+            const telefone = "5511937143006"; // WhatsApp do destinatário
             const textoEncoded = encodeURIComponent(texto);
             const link = `https://wa.me/${telefone}?text=${textoEncoded}`;
             window.open(link, "_blank");
